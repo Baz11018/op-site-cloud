@@ -62,7 +62,7 @@ button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:650px;mar
 "use strict";
 
 var APP="OP Site Management - Office";
-var VERSION="1.5.13";
+var VERSION="1.5.14";
 var KEY="op-site-cloud-v01-cache";
 var PROFILE_KEY="op-site-cloud-profile-cache";
 var SUPABASE_URL="https://ffzdrqelwzncchtbdxqs.supabase.co";
@@ -171,7 +171,7 @@ function itemCard(i){
  return '<div class="card item" onclick="App.openItem(\''+i.id+'\')"><div class="itemrow"><div class="statusIcon '+cl+'">'+ico+'</div><div style="min-width:0;flex:1"><div class="title">'+esc(i.title)+'</div><div class="small">'+esc(i.area||"General")+(i.responsible?' · '+esc(i.responsible):'')+'</div><div class="meta">'+label+'</div></div><span style="color:#a2abba">›</span></div></div>'
 }
 function projectsView(){
- var h='<div class="wrap">'+top(APP,cloud.profile?cloud.profile.display_name:"Simple site control",false)+'<div id="pullRefresh" class="pullRefresh"><span class="spin"></span><span id="pullRefreshText">Pull down to refresh</span></div><div class="cloudbar"><span>'+cloud.syncText+'</span>'+(cloud.profile&&cloud.profile.global_role==="admin"?'<button class="adminBtn" onclick="App.admin()">👑 Admin</button>':'')+'</div><div class="section">PROJECTS</div>',i,p,c;
+ var h='<div class="wrap">'+top(APP,cloud.profile?cloud.profile.display_name:"Simple site control",false)+'<div id="pullRefresh" class="pullRefresh"><span class="spin"></span><span id="pullRefreshText">Pull down to refresh</span></div><div class="cloudbar"><button class="syncBtn" onclick="App.manualSync()">'+cloud.syncText+'</button>'+(cloud.profile&&cloud.profile.global_role==="admin"?'<button class="adminBtn" onclick="App.admin()">👑 Admin</button>':'')+'</div><div class="section">PROJECTS</div>',i,p,c;
  if(!state.projects.length)h+='<div class="card empty">No projects yet.<br>Create your first site project.</div>';
  for(i=0;i<state.projects.length;i++){p=state.projects[i];c=counts(p);h+='<div class="card project" onclick="App.openProject(\''+p.id+'\')">'+(p.role==="owner"?'<div class="projectTools"><button class="projectTool" aria-label="Rename project" onclick="event.stopPropagation();App.renameProject(\''+p.id+'\')">✎</button><button class="projectTool delete" aria-label="Delete project" onclick="event.stopPropagation();App.askDeleteProject(\''+p.id+'\')">×</button></div>':'')+'<div class="between projectMain"><div><div class="title">'+esc(p.name)+'</div><div class="small">'+(p.role==="owner"?"Owner":p.role==="editor"?"Shared · Editor":"Shared · Viewer")+'</div></div><span>›</span></div><div class="counts">'+
  (c.over?'<span class="chip red">🔴 '+c.over+' urgent</span>':'')+

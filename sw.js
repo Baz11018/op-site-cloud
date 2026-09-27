@@ -1,4 +1,4 @@
-// OP Site Management - Office v1.5.13
+// OP Site Management - Office v1.5.14
 // Instant launch from local shell; refresh shell in background for the next launch.
 const SHELL_CACHE = 'op-site-office-shell';
 const INDEX_URL = new URL('./index.html', self.location).href;
