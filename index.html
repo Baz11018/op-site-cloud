@@ -45,6 +45,13 @@ button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:650px;mar
 
 .appModal{position:fixed;inset:0;background:rgba(13,24,48,.38);z-index:300;display:flex;align-items:center;justify-content:center;padding:max(18px,env(safe-area-inset-top)) 16px max(18px,env(safe-area-inset-bottom));backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}.appModalBox{width:100%;max-width:440px;background:#fff;border-radius:26px;padding:22px 18px;box-shadow:0 22px 70px rgba(13,24,48,.22);max-height:min(78vh,680px);overflow:auto;overscroll-behavior:contain}.appModalTitle{font-size:24px;font-weight:900;letter-spacing:-.5px;margin:0 0 5px}.appModalSub{font-size:13px;color:var(--muted);line-height:1.45;margin-bottom:18px}.modalActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}.contactChoice{display:flex;align-items:center;gap:13px;width:100%;border:1px solid var(--line);background:#fff;border-radius:18px;padding:15px;margin:9px 0;text-align:left;color:var(--text)}.contactChoice.selected{background:#eaf3ff;border-color:#8ebaff}.contactCheck{width:27px;height:27px;border-radius:9px;background:#edf2fa;display:grid;place-items:center;font-weight:900;color:#fff;flex:0 0 27px}.contactChoice.selected .contactCheck{background:var(--blue)}.modalError{font-size:12px;color:var(--red);font-weight:750;margin-top:8px;min-height:17px}.modalInput{width:100%;border:1px solid var(--line);background:#fff;border-radius:17px;padding:15px;color:var(--text);outline:none;font-size:17px}.modalInput.pin{font-size:25px;letter-spacing:10px;text-align:center;font-weight:850}.modalLabel{display:block;font-size:11px;font-weight:800;color:#778298;margin:14px 0 6px 4px;letter-spacing:.5px}
 .loginWrap{max-width:420px;margin:0 auto;padding:calc(34px + env(safe-area-inset-top)) 18px 30px;min-height:100vh;display:flex;flex-direction:column;justify-content:center}.loginLogo{font-size:34px;font-weight:900;letter-spacing:-1px;color:var(--navy)}.pinInput{font-size:28px;letter-spacing:12px;text-align:center;font-weight:800;padding:16px;border:1px solid #d8dde6;border-radius:16px;width:100%;box-sizing:border-box}.cloudbar{display:flex;justify-content:space-between;align-items:center;margin:4px 2px 14px;font-size:12px;color:#77808f}.adminBtn{border:0;background:linear-gradient(135deg,#eaf4ff 0%,#d8ebff 55%,#c9e2ff 100%);color:#1767d8;border:1px solid rgba(37,126,255,.10);box-shadow:0 6px 16px rgba(37,126,255,.10);border-radius:12px;padding:9px 12px;font-weight:800}.roleTag{font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;background:#eef2f7;color:#53606f}.adminGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.adminCard{padding:18px;text-align:left;border:0;width:100%;cursor:pointer}.userRow{display:flex;justify-content:space-between;align-items:center;gap:10px}.logout{margin-top:14px}.loginErr{color:#b42318;font-size:13px;min-height:20px;margin-top:10px}.syncing{color:#a66300}
+
+/* Home pull-to-refresh */
+.pullRefresh{height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:8px;color:#1767d8;font-size:12px;font-weight:800;transition:height .16s ease}
+.pullRefresh.show{height:42px}
+.pullRefresh .spin{width:15px;height:15px;border:2px solid rgba(23,103,216,.20);border-top-color:#1767d8;border-radius:50%}
+.pullRefresh.loading .spin{animation:opSpin .75s linear infinite}
+@keyframes opSpin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -55,7 +62,7 @@ button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:650px;mar
 "use strict";
 
 var APP="OP Site Management - Office";
-var VERSION="0.4.3 TEST";
+var VERSION="0.4.5 TEST";
 var KEY="op-site-cloud-v01-cache";
 var SUPABASE_URL="https://ffzdrqelwzncchtbdxqs.supabase.co";
 var SUPABASE_KEY="sb_publishable_SG5ty5m_K4JKupvdSkCegg_cQbhtEux";
@@ -91,10 +98,19 @@ async function refreshCloudUI(force){
   render();
  }finally{cloudRefreshBusy=false}
 }
-function refreshWhenActive(){if(document.visibilityState==="visible")refreshCloudUI(false)}
+function canAutoRefresh(){
+ // Never redraw a form while the user is typing/editing: a cloud refresh calls render()
+ // and would otherwise replace the inputs and erase unsaved text.
+ if(view.screen==="edit")return false;
+ if(q("appModal"))return false;
+ var a=document.activeElement;
+ if(a&&(/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)||a.isContentEditable))return false;
+ return true
+}
+function refreshWhenActive(){if(document.visibilityState==="visible"&&canAutoRefresh())refreshCloudUI(false)}
 document.addEventListener("visibilitychange",refreshWhenActive);
-window.addEventListener("focus",function(){refreshCloudUI(false)});
-window.addEventListener("pageshow",function(){refreshCloudUI(false)});
+window.addEventListener("focus",function(){if(canAutoRefresh())refreshCloudUI(false)});
+window.addEventListener("pageshow",function(){if(canAutoRefresh())refreshCloudUI(false)});
 
 async function cloudNewProject(name){var j=await adminCall({action:"create_project",name:name});var d=j.project;if(!d||!d.id)throw new Error("Project creation failed");return {id:d.id,name:d.name,owner_id:d.owner_id,role:"owner",cloud:true,createdAt:d.created_at,items:[],areas:[]}}
 async function cloudRenameProject(id,name){var r=await sb.from("projects").update({name:name,updated_at:new Date().toISOString()}).eq("id",id).select("id,name").single();if(r.error)throw r.error;return r.data}
@@ -150,7 +166,7 @@ function itemCard(i){
  return '<div class="card item" onclick="App.openItem(\''+i.id+'\')"><div class="itemrow"><div class="statusIcon '+cl+'">'+ico+'</div><div style="min-width:0;flex:1"><div class="title">'+esc(i.title)+'</div><div class="small">'+esc(i.area||"General")+(i.responsible?' · '+esc(i.responsible):'')+'</div><div class="meta">'+label+'</div></div><span style="color:#a2abba">›</span></div></div>'
 }
 function projectsView(){
- var h='<div class="wrap">'+top(APP,cloud.profile?cloud.profile.display_name:"Simple site control",false)+'<div class="cloudbar"><span>'+cloud.syncText+'</span>'+(cloud.profile&&cloud.profile.global_role==="admin"?'<button class="adminBtn" onclick="App.admin()">👑 Admin</button>':'')+'</div><div class="section">PROJECTS</div>',i,p,c;
+ var h='<div class="wrap">'+top(APP,cloud.profile?cloud.profile.display_name:"Simple site control",false)+'<div id="pullRefresh" class="pullRefresh"><span class="spin"></span><span id="pullRefreshText">Pull down to refresh</span></div><div class="cloudbar"><span>'+cloud.syncText+'</span>'+(cloud.profile&&cloud.profile.global_role==="admin"?'<button class="adminBtn" onclick="App.admin()">👑 Admin</button>':'')+'</div><div class="section">PROJECTS</div>',i,p,c;
  if(!state.projects.length)h+='<div class="card empty">No projects yet.<br>Create your first site project.</div>';
  for(i=0;i<state.projects.length;i++){p=state.projects[i];c=counts(p);h+='<div class="card project" onclick="App.openProject(\''+p.id+'\')">'+(p.role==="owner"?'<div class="projectTools"><button class="projectTool" aria-label="Rename project" onclick="event.stopPropagation();App.renameProject(\''+p.id+'\')">✎</button><button class="projectTool delete" aria-label="Delete project" onclick="event.stopPropagation();App.askDeleteProject(\''+p.id+'\')">×</button></div>':'')+'<div class="between projectMain"><div><div class="title">'+esc(p.name)+'</div><div class="small">'+(p.role==="owner"?"Owner":p.role==="editor"?"Shared · Editor":"Shared · Viewer")+'</div></div><span>›</span></div><div class="counts">'+
  (c.over?'<span class="chip red">🔴 '+c.over+' urgent</span>':'')+
@@ -252,6 +268,28 @@ function render(){
  else if(view.screen==="detail")app.innerHTML=detailView();
  else app.innerHTML=projectShell()
 }
+// iPhone-style pull-to-refresh on the Projects home only.
+var pullStartY=0,pullDistance=0,pullTracking=false,pullRefreshing=false;
+function pullEl(){return q("pullRefresh")}
+function resetPull(){var e=pullEl();if(e){e.className="pullRefresh";e.style.height=""}pullTracking=false;pullDistance=0}
+document.addEventListener("touchstart",function(ev){
+ if(view.screen!=="projects"||pullRefreshing||window.scrollY>0||!ev.touches||!ev.touches.length)return;
+ pullStartY=ev.touches[0].clientY;pullDistance=0;pullTracking=true;
+},{passive:true});
+document.addEventListener("touchmove",function(ev){
+ if(!pullTracking||view.screen!=="projects"||!ev.touches||!ev.touches.length)return;
+ var d=ev.touches[0].clientY-pullStartY;if(d<=0){resetPull();return}
+ pullDistance=Math.min(90,d*.55);var e=pullEl();if(!e)return;
+ e.className="pullRefresh show";e.style.height=Math.min(52,pullDistance)+"px";
+ var tx=q("pullRefreshText");if(tx)tx.textContent=pullDistance>=42?"Release to refresh":"Pull down to refresh";
+},{passive:true});
+document.addEventListener("touchend",async function(){
+ if(!pullTracking)return;var go=pullDistance>=42;pullTracking=false;
+ if(!go){resetPull();return}
+ pullRefreshing=true;var e=pullEl(),tx=q("pullRefreshText");if(e){e.className="pullRefresh show loading";e.style.height="42px"}if(tx)tx.textContent="Refreshing…";
+ try{await refreshCloudUI(true)}finally{pullRefreshing=false;resetPull()}
+},{passive:true});
+
 window.App={login:loginWithPin,logout:async function(){await sb.auth.signOut();cloud.session=null;cloud.profile=null;state.projects=[];save();view.screen="projects";render()},admin:function(){view.screen="admin";render()},adminUsers:async function(){try{await usersView()}catch(e){alert(e.message)}},adminProjects:async function(){try{await allProjectsView()}catch(e){alert(e.message)}},projectAccess:async function(){try{await refreshCloudUI(true);await accessView()}catch(e){alert(e.message)}},setAccess:async function(id,role){try{await setAccess(id,role)}catch(e){alert(e.message)}},addUser:addUserSheet,saveNewUser:saveNewUserSheet,changePin:changePinSheet,saveChangedPin:saveChangedPinSheet,contacts:contactsSheet,toggleContact:toggleContactSheet,saveContacts:saveContactsSheet,closeModal:closeAppModal,refresh:async function(){await refreshCloudUI(true)},smart:function(k){view.smartFilter=k;view.areaFilter=null;render()},areas:function(){view.smartFilter=null;view.areaFilter="__areas__";render()},areaByIndex:function(n){view.areaFilter=view.areaKeys[n];render()},materialToggle:function(){q("materialFields").className=q("requiresMaterial").checked?"":"hidden"},pickPhoto:function(f){if(!f)return;view.draft=captureDraft();var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var sc=Math.min(1,700/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext("2d").drawImage(im,0,0,c.width,c.height);view.tempPhoto=c.toDataURL("image/jpeg",.72);render()};im.src=r.result};r.readAsDataURL(f)},removePhoto:function(){view.draft=captureDraft()||view.draft;view.tempPhoto="";var i=currentItem();if(i){i.photo="";save()}render()},showPhoto:function(id){var i=currentItem();if(!i||i.id!==id||!i.photo)return;var d=document.createElement("div");d.className="photoOverlay";d.onclick=function(){d.remove()};d.innerHTML='<img src="'+i.photo+'">';document.body.appendChild(d)},setStep:function(s){var i=currentItem(),p=isDone(i)?"done":i.materialStatus;if(!i)return;if(!(i.history instanceof Array))i.history=[];if(s==="done"){i.status="done";i.materialStatus="installed";i.doneAt=stamp()}else{i.status="open";i.materialStatus=s;i[s+"At"]=stamp()}if(s==="ordered"){i.reminderAt="";i.reminderDays=0}if(s!=="ordered"){i.reminderAt="";i.reminderDays=0}i.history.push({at:stamp(),text:"Workflow: "+p+" → "+s});save();pushItem(project(),i,false);render();if(s==="ordered")reminderSheet()},
 
  kind:function(k){q("kind").value=k;q("segTask").className=k==="task"?"on":"";q("segIssue").className=k==="issue"?"on":""},
@@ -263,7 +301,7 @@ window.App={login:loginWithPin,logout:async function(){await sb.auth.signOut();c
   newProject:function(){openAppModal('<div class="appModalTitle">New Project</div><div class="appModalSub">Create a new cloud project.</div><label class="modalLabel">PROJECT NAME</label><input id="newProjectName" class="modalInput" autocomplete="off" placeholder="e.g. Bonaire"><div id="modalError" class="modalError"></div><div class="modalActions"><button class="btn secondary" onclick="App.closeModal()">Cancel</button><button id="modalSave" class="btn primary" onclick="App.saveNewProject()">Create</button></div>');setTimeout(function(){var x=q("newProjectName");if(x)x.focus()},80)},
  saveNewProject:async function(){var n=((q("newProjectName")||{}).value||"").trim();if(!n){modalError("Enter the project name.");return}var b=q("modalSave");if(b){b.disabled=true;b.textContent="Creating…"}try{var p=await cloudNewProject(n);state.projects.unshift(p);save();closeAppModal();view={screen:"project",projectId:p.id,tab:"today",filter:"all",itemId:""};render()}catch(e){if(b){b.disabled=false;b.textContent="Create"}modalError(e.message||"Could not create project.")}},
  openProject:function(id){view={screen:"project",projectId:id,tab:"today",filter:"all",itemId:""};render();refreshCloudUI(true)},
- tab:function(t){view.smartFilter=null;view.areaFilter=null;view.tab=t;view.screen="project";view.filter="all";render()},
+ tab:function(t){view.smartFilter=null;view.areaFilter=null;view.tab=t;view.screen="project";view.filter="all";if(canAutoRefresh())refreshCloudUI(true);else render()},
  filter:function(f){view.filter=f;render()},
  back:function(){if(view.screen==="admin"){view.screen="projects";render();return}if(view.screen==="access"){view.screen="project";render();return}if(view.smartFilter||view.areaFilter){view.smartFilter=null;view.areaFilter=null;render();return}if(view.screen==="edit"||view.screen==="detail"){view.screen="project"}else if(view.screen==="project"){view.screen="projects";view.projectId=""}else view.screen="projects";render();if(view.screen==="projects")refreshCloudUI(true)},
  newItem:function(){view.itemId="";view.tempPhoto="";view.draft=null;view.screen="edit";render()},
