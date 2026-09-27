@@ -62,7 +62,7 @@ button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:650px;mar
 "use strict";
 
 var APP="OP Site Management - Office";
-var VERSION="0.4.5 TEST";
+var VERSION="0.4.6 TEST";
 var KEY="op-site-cloud-v01-cache";
 var SUPABASE_URL="https://ffzdrqelwzncchtbdxqs.supabase.co";
 var SUPABASE_KEY="sb_publishable_SG5ty5m_K4JKupvdSkCegg_cQbhtEux";
@@ -301,9 +301,9 @@ window.App={login:loginWithPin,logout:async function(){await sb.auth.signOut();c
   newProject:function(){openAppModal('<div class="appModalTitle">New Project</div><div class="appModalSub">Create a new cloud project.</div><label class="modalLabel">PROJECT NAME</label><input id="newProjectName" class="modalInput" autocomplete="off" placeholder="e.g. Bonaire"><div id="modalError" class="modalError"></div><div class="modalActions"><button class="btn secondary" onclick="App.closeModal()">Cancel</button><button id="modalSave" class="btn primary" onclick="App.saveNewProject()">Create</button></div>');setTimeout(function(){var x=q("newProjectName");if(x)x.focus()},80)},
  saveNewProject:async function(){var n=((q("newProjectName")||{}).value||"").trim();if(!n){modalError("Enter the project name.");return}var b=q("modalSave");if(b){b.disabled=true;b.textContent="Creating…"}try{var p=await cloudNewProject(n);state.projects.unshift(p);save();closeAppModal();view={screen:"project",projectId:p.id,tab:"today",filter:"all",itemId:""};render()}catch(e){if(b){b.disabled=false;b.textContent="Create"}modalError(e.message||"Could not create project.")}},
  openProject:function(id){view={screen:"project",projectId:id,tab:"today",filter:"all",itemId:""};render();refreshCloudUI(true)},
- tab:function(t){view.smartFilter=null;view.areaFilter=null;view.tab=t;view.screen="project";view.filter="all";if(canAutoRefresh())refreshCloudUI(true);else render()},
+ tab:function(t){view.smartFilter=null;view.areaFilter=null;view.tab=t;view.screen="project";view.filter="all";render()},
  filter:function(f){view.filter=f;render()},
- back:function(){if(view.screen==="admin"){view.screen="projects";render();return}if(view.screen==="access"){view.screen="project";render();return}if(view.smartFilter||view.areaFilter){view.smartFilter=null;view.areaFilter=null;render();return}if(view.screen==="edit"||view.screen==="detail"){view.screen="project"}else if(view.screen==="project"){view.screen="projects";view.projectId=""}else view.screen="projects";render();if(view.screen==="projects")refreshCloudUI(true)},
+ back:function(){if(view.screen==="admin"){view.screen="projects";render();return}if(view.screen==="access"){view.screen="project";render();return}if(view.smartFilter||view.areaFilter){view.smartFilter=null;view.areaFilter=null;render();return}if(view.screen==="edit"||view.screen==="detail"){view.screen="project"}else if(view.screen==="project"){view.screen="projects";view.projectId=""}else view.screen="projects";render()},
  newItem:function(){view.itemId="";view.tempPhoto="";view.draft=null;view.screen="edit";render()},
  openItem:function(id){view.itemId=id;view.screen="detail";render()},
  editItem:function(){view.tempPhoto="";view.draft=null;view.screen="edit";render()},
