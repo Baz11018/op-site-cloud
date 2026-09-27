@@ -62,7 +62,7 @@ button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:650px;mar
 "use strict";
 
 var APP="OP Site Management - Office";
-var VERSION="1.5.12";
+var VERSION="1.5.13";
 var KEY="op-site-cloud-v01-cache";
 var PROFILE_KEY="op-site-cloud-profile-cache";
 var SUPABASE_URL="https://ffzdrqelwzncchtbdxqs.supabase.co";
@@ -335,6 +335,18 @@ window.App={login:loginWithPin,manualSync:manualSync,logout:async function(){awa
 
 load();
 initCloud();
+
+// Lightweight automatic cloud refresh. Manual Sync remains available at all times.
+// Refresh when the app returns to the foreground and periodically while it is open,
+// but never redraw while the user is editing or a modal is open.
+var autoSyncTimer=null;
+function autoSyncNow(){
+ if(document.visibilityState!=="visible"||!cloud.session||!cloud.profile||!canAutoRefresh())return;
+ refreshCloudUI(false);
+}
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")setTimeout(autoSyncNow,250)});
+window.addEventListener("focus",function(){setTimeout(autoSyncNow,250)});
+autoSyncTimer=setInterval(autoSyncNow,45000);
 
 // Register/update the service worker in the background without delaying startup.
 // Do NOT clear the app-shell cache here: that cache is what makes startup instant
