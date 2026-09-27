@@ -62,7 +62,7 @@ button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:650px;mar
 "use strict";
 
 var APP="OP Site Management - Office";
-var VERSION="1.5.4";
+var VERSION="1.5.5";
 var KEY="op-site-cloud-v01-cache";
 var PROFILE_KEY="op-site-cloud-profile-cache";
 var SUPABASE_URL="https://ffzdrqelwzncchtbdxqs.supabase.co";
@@ -243,7 +243,7 @@ function createPdf(){if(!state.reportTemplateData)return alert("Upload your Reli
      var hasSub=!!(z.requiresMaterial&&z.materialName),mainY=hasSub?y-13:y-17;
      tx(z.title,L+92,mainY,8,bold,NAVY,w-92-210);
      if(hasSub){var matSize=7,matH=font.heightAtSize(matSize);tx(z.materialName,L+w-205,y-rowH/2-matH/2,matSize,font,NAVY,132);}
-     var st=itemStatus(z),stSize=6.3,stBoxX=L+w-68,stBoxW=62,stText=fit(st[0],54,stSize,bold),stTextW=bold.widthOfTextAtSize(stText,stSize),stTextH=bold.heightAtSize(stSize);var stBoxY=y-rowH/2-17/2;box(stBoxX,stBoxY,stBoxW,17,st[1],st[1]);tx(stText,stBoxX+(stBoxW-stTextW)/2,stBoxY+(17-stTextH)/2,stSize,bold,st[2]);
+     var st=itemStatus(z),stSize=6.3,stBoxX=L+w-68,stBoxW=62,stText=fit(st[0],54,stSize,bold),stTextW=bold.widthOfTextAtSize(stText,stSize),stTextH=bold.heightAtSize(stSize);var stBoxY=y-rowH/2-17/2;box(stBoxX,stBoxY,stBoxW,17,st[1],st[1]);tx(stText,stBoxX+8,stBoxY+(17-stTextH)/2,stSize,bold,st[2]);
      if(z.requiresMaterial&&z.materialName)tx((z.materialStatus||"requested").toUpperCase(),L+92,y-24,5.8,font,MUTED,w-92-210);
      y-=rowH+3;
    }
