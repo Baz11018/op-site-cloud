@@ -62,7 +62,7 @@ button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:650px;mar
 "use strict";
 
 var APP="OP Site Management - Office";
-var VERSION="0.4.8 TEST";
+var VERSION="0.4.9 TEST";
 var KEY="op-site-cloud-v01-cache";
 var PROFILE_KEY="op-site-cloud-profile-cache";
 var SUPABASE_URL="https://ffzdrqelwzncchtbdxqs.supabase.co";
@@ -112,8 +112,8 @@ function canAutoRefresh(){
 async function cloudNewProject(name){var j=await adminCall({action:"create_project",name:name});var d=j.project;if(!d||!d.id)throw new Error("Project creation failed");return {id:d.id,name:d.name,owner_id:d.owner_id,role:"owner",cloud:true,createdAt:d.created_at,items:[],areas:[]}}
 async function cloudRenameProject(id,name){var r=await sb.from("projects").update({name:name,updated_at:new Date().toISOString()}).eq("id",id).select("id,name").single();if(r.error)throw r.error;return r.data}
 async function cloudDeleteProject(id){var r=await sb.from("projects").delete().eq("id",id);if(r.error)throw r.error;return true}
-async function pushItem(p,i,isNew){if(!cloud.profile||!p.cloud)return;var localId=i.id;cloud.syncText="☁️ Syncing…";var table=i.kind==="issue"?"issues":"tasks",payload=JSON.parse(JSON.stringify(i));delete payload.id;delete payload.kind;var row={project_id:p.id,data:payload,updated_by:cloud.profile.id};if(isNew)row.created_by=cloud.profile.id;var r=isNew?await sb.from(table).insert(row).select("id").single():await sb.from(table).update(row).eq("id",i.id).select("id").single();if(r.error){cloud.syncText="☁️ Save error";alert("Cloud save failed: "+r.error.message);return}if(isNew){i.id=r.data.id;if(view.itemId===localId)view.itemId=i.id}cloud.syncText="☁️ Synced";save()}
-async function cloudDeleteItem(p,i){if(!p.cloud)return;var table=i.kind==="issue"?"issues":"tasks";var r=await sb.from(table).delete().eq("id",i.id);if(r.error)alert("Cloud delete failed: "+r.error.message)}
+async function pushItem(p,i,isNew){if(!cloud.profile||!p.cloud)return;cloud.syncText="☁️ Syncing…";var table=i.kind==="issue"?"issues":"tasks",payload=JSON.parse(JSON.stringify(i));delete payload.id;delete payload.cloudId;delete payload.kind;var row={project_id:p.id,data:payload,updated_by:cloud.profile.id};if(isNew)row.created_by=cloud.profile.id;var remoteId=i.cloudId||i.id;var r=isNew?await sb.from(table).insert(row).select("id").single():await sb.from(table).update(row).eq("id",remoteId).select("id").single();if(r.error){cloud.syncText="☁️ Save error";alert("Cloud save failed: "+r.error.message);return}if(isNew)i.cloudId=r.data.id;cloud.syncText="☁️ Synced";save()}
+async function cloudDeleteItem(p,i){if(!p.cloud)return;var table=i.kind==="issue"?"issues":"tasks",remoteId=i.cloudId||i.id;var r=await sb.from(table).delete().eq("id",remoteId);if(r.error)alert("Cloud delete failed: "+r.error.message)}
 async function adminCall(body){var ss=await sb.auth.getSession();var token=ss.data.session&&ss.data.session.access_token;if(!token)throw new Error("Session expired");var r=await fetch(SUPABASE_URL+"/functions/v1/op-admin",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+token},body:JSON.stringify(body)});var j=await r.json();if(!r.ok)throw new Error(j.error||"Admin operation failed");return j}
 async function accessView(){var p=project();if(!p||p.role!=="owner"){alert("Only the project Owner can manage access.");return}var prof=await sb.from("profiles").select("id,display_name,status").neq("id",cloud.profile.id).eq("status","active");if(prof.error)throw prof.error;var ac=await sb.from("allowed_contacts").select("contact_user_id").eq("user_id",cloud.profile.id);if(ac.error)throw ac.error;var allowed=(ac.data||[]).map(function(x){return x.contact_user_id});var people=(prof.data||[]).filter(function(x){return allowed.indexOf(x.id)>=0});var pa=await sb.from("project_access").select("user_id,role").eq("project_id",p.id);if(pa.error)throw pa.error;var roles={};(pa.data||[]).forEach(function(x){roles[x.user_id]=x.role});var h='<div class="wrap">'+top("Project Access",p.name,true)+'<div class="small" style="margin-bottom:12px">Owner: '+esc(cloud.profile.display_name)+'</div>';if(!people.length)h+='<div class="card empty">No Allowed Contacts yet.<br>Contact Admin.</div>';people.forEach(function(u){var r=roles[u.id]||"none";h+='<div class="card"><div class="title">'+esc(u.display_name)+'</div><div class="segment" style="margin-top:12px"><button class="'+(r==="none"?"on":"")+'" onclick="App.setAccess(\''+u.id+'\',\'none\')">No Access</button><button class="'+(r==="viewer"?"on":"")+'" onclick="App.setAccess(\''+u.id+'\',\'viewer\')">Viewer</button><button class="'+(r==="editor"?"on":"")+'" onclick="App.setAccess(\''+u.id+'\',\'editor\')">Editor</button></div></div>'});h+='</div>';view.screen="access";q("app").innerHTML=h}
 async function setAccess(userId,role){var p=project();if(role==="none"){var d=await sb.from("project_access").delete().eq("project_id",p.id).eq("user_id",userId);if(d.error)throw d.error}else{var x=await sb.from("project_access").upsert({project_id:p.id,user_id:userId,role:role},{onConflict:"project_id,user_id"});if(x.error)throw x.error}await accessView()}
@@ -325,9 +325,10 @@ load();
 initCloud();
 
 window.addEventListener("load",function(){
- if("serviceWorker" in navigator){
-   setTimeout(function(){navigator.serviceWorker.register("./sw.js").catch(function(){})},1000);
- }
+ // This app prioritizes fresh code and speed. Remove any old service worker that may
+ // keep serving a previous index.html after a GitHub update. localStorage data is untouched.
+ if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})}).catch(function(){})}
+ if(window.caches&&caches.keys){caches.keys().then(function(keys){keys.forEach(function(k){caches.delete(k)})}).catch(function(){})}
 });
 })();
 </script>
