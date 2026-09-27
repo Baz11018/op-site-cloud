@@ -62,7 +62,7 @@ button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:650px;mar
 "use strict";
 
 var APP="OP Site Management - Office";
-var VERSION="1.5.5";
+var VERSION="1.5.6";
 var KEY="op-site-cloud-v01-cache";
 var PROFILE_KEY="op-site-cloud-profile-cache";
 var SUPABASE_URL="https://ffzdrqelwzncchtbdxqs.supabase.co";
@@ -337,7 +337,14 @@ initCloud();
 window.addEventListener("load",function(){
  // This app prioritizes fresh code and speed. Remove any old service worker that may
  // keep serving a previous index.html after a GitHub update. localStorage data is untouched.
- if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})}).catch(function(){})}
+ if("serviceWorker" in navigator){
+ window.addEventListener("load",function(){
+  navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(function(reg){
+   // Check for a newer worker in the background; never block app startup.
+   reg.update().catch(function(){});
+  }).catch(function(){});
+ });
+}
  if(window.caches&&caches.keys){caches.keys().then(function(keys){keys.forEach(function(k){caches.delete(k)})}).catch(function(){})}
 });
 })();
