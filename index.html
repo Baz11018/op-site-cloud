@@ -62,7 +62,7 @@ button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:650px;mar
 "use strict";
 
 var APP="OP Site Management - Office";
-var VERSION="1.5.14";
+var VERSION="1.5.15";
 var KEY="op-site-cloud-v01-cache";
 var PROFILE_KEY="op-site-cloud-profile-cache";
 var SUPABASE_URL="https://ffzdrqelwzncchtbdxqs.supabase.co";
@@ -330,7 +330,7 @@ window.App={login:loginWithPin,manualSync:manualSync,logout:async function(){awa
  deleteItem:function(){if(!confirm("Delete this item?"))return;var p=project(),target=currentItem(),i,newArr=[];for(i=0;i<p.items.length;i++)if(p.items[i].id!==view.itemId)newArr.push(p.items[i]);p.items=newArr;save();cloudDeleteItem(p,target);view.screen="project";view.itemId="";render()},
  exportBackup:function(){var p=project();if(!p)return;var pack={type:"op-site-management-project-backup",version:2,createdAt:stamp(),project:JSON.parse(JSON.stringify(p))};var blob=new Blob([JSON.stringify(pack,null,2)],{type:"application/json"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="OP Site Management - "+p.name+" - Backup - "+isoToday()+".json";document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(a.href)},1000)},
  importClick:function(){q("restoreFile").click()},
- restoreBackup:function(file){if(!file)return;var r=new FileReader();r.onload=function(){try{var x=JSON.parse(r.result),p,idx=-1,j;if(!x||x.type!=="op-site-management-project-backup"||!x.project||!x.project.id)throw new Error();p=x.project;if(!(p.items instanceof Array))p.items=[];if(!(p.areas instanceof Array))p.areas=[];if(!confirm("Restore project backup? This will restore the saved project exactly as it was."))return;for(j=0;j<state.projects.length;j++)if(state.projects[j].id===p.id){idx=j;break}if(idx>=0)state.projects[idx]=p;else state.projects.unshift(p);save();view={screen:"project",projectId:p.id,tab:"today",filter:"all",itemId:"",smartFilter:null,areaFilter:null,areaKeys:[],tempPhoto:""};render()}catch(e){alert("Invalid OP Site Management project backup.")}};r.readAsText(file)}
+ restoreBackup:function(file){if(!file)return;var r=new FileReader();r.onload=async function(){try{var x=JSON.parse(r.result),src,np,j;if(!x||x.type!=="op-site-management-project-backup"||!x.project)throw new Error("Invalid backup");src=JSON.parse(JSON.stringify(x.project));if(!(src.items instanceof Array))src.items=[];if(!(src.areas instanceof Array))src.areas=[];if(!confirm("Restore project backup? A new cloud project will be created from this backup."))return;cloud.syncText="☁️ Restoring…";render();np=await cloudNewProject(src.name||"Restored Project");np.areas=src.areas.slice();np.items=[];state.projects.unshift(np);save();for(j=0;j<src.items.length;j++){var it=JSON.parse(JSON.stringify(src.items[j]));delete it.cloudId;if(!it.id||String(it.id).indexOf("id")!==0)it.id=uid();np.items.push(it);queueItem(np,it)}save();if(np.areas.length){var rows=np.areas.map(function(name,k){return {project_id:np.id,name:name,sort_order:k}});var ar=await sb.from("areas").insert(rows);if(ar.error)console.warn("Area restore:",ar.error.message)}await flushPending();view={screen:"project",projectId:np.id,tab:"today",filter:"all",itemId:"",smartFilter:null,areaFilter:null,areaKeys:[],tempPhoto:""};render()}catch(e){updateSyncText();alert("Could not restore project backup: "+(e.message||"Unknown error"))}};r.readAsText(file)}
 };
 
 load();
