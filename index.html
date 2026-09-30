@@ -62,7 +62,7 @@ button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:650px;mar
 "use strict";
 
 var APP="OP Site Management - Office";
-var VERSION="1.5.18";
+var VERSION="1.5.19";
 var KEY="op-site-cloud-v01-cache";
 var PROFILE_KEY="op-site-cloud-profile-cache";
 var SUPABASE_URL="https://ffzdrqelwzncchtbdxqs.supabase.co";
@@ -234,7 +234,7 @@ function createPdf(){if(!state.reportTemplateData)return alert("Upload your Reli
  for(i=0;i<p.items.length;i++){z=p.items[i];if(isDone(z)&&!view.includeDone)continue;a=(z.area||"General").trim()||"General";if(!areas[a])areas[a]=[];areas[a].push(z)}
  keys=Object.keys(areas).sort();var no=0;
  for(i=0;i<keys.length;i++){
-   a=keys[i];await ensure(45);box(L,y-16,W-L-R,16,GRAY,LINE);tx(a.toUpperCase(),L+8,y-11,7.5,bold,NAVY,W-L-R-55);tx(areas[a].length+" "+(areas[a].length===1?"ITEM":"ITEMS"),L+w-60,y-11,6.2,bold,MUTED,45);y-=19;
+   a=keys[i];await ensure(45);box(L,y-16,W-L-R,16,GRAY,LINE);tx(a.toUpperCase(),L+8,y-11,7.5,bold,NAVY,W-L-R-55);tx(areas[a].length+" "+(areas[a].length===1?"ITEM":"ITEMS"),W-R-43,y-11,6.2,bold,MUTED,40);y-=19;
    for(j=0;j<areas[a].length;j++){
      z=areas[a][j];no++;var rowH=z.requiresMaterial&&z.materialName?29:25;await ensure(rowH+3);var done=isDone(z),issue=z.kind==="issue",fill=done?GREEN:(issue?PINK:WHITE),w=W-L-R;box(L,y-rowH,w,rowH,fill,LINE);
      tx((no<10?"0":"")+no,L+7,y-17,7,font,NAVY,20);
