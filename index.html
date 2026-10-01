@@ -62,7 +62,7 @@ button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:650px;mar
 "use strict";
 
 var APP="OP Site Management - Office";
-var VERSION="1.5.23";
+var VERSION="1.5.25";
 var KEY="op-site-cloud-v01-cache";
 var PROFILE_KEY="op-site-cloud-profile-cache";
 var SUPABASE_URL="https://ffzdrqelwzncchtbdxqs.supabase.co";
@@ -227,14 +227,14 @@ function createPdf(){if(!state.reportTemplateData)return alert("Upload your Reli
    for(k=0;k<4;k++){x=L+k*(bw+gap);box(x,y-31,bw,31,vals[k][2]);tx(vals[k][0],x+8,y-13,13,bold,NAVY);tx(vals[k][1],x+8,y-25,6.4,bold,vals[k][3],bw-16)}
    y-=43;drawTableHead();
  }
- function drawTableHead(){var x=L,w=W-L-R,statusTextX=L+468;box(x,y-17,w,17,GRAY,LINE);tx("#",x+7,y-12,6.7,bold,MUTED);tx("TYPE",x+31,y-12,6.7,bold,MUTED);tx("DESCRIPTION / TASK",x+92,y-12,6.7,bold,MUTED);tx("MATERIAL (IF ANY)",x+w-205,y-12,6.7,bold,MUTED);tx("STATUS",statusTextX,y-12,6.7,bold,MUTED);y-=20}
+ function drawTableHead(){var x=L,w=W-L-R,statusTextX=W-R-60;box(x,y-17,w,17,GRAY,LINE);tx("#",x+7,y-12,6.7,bold,MUTED);tx("TYPE",x+31,y-12,6.7,bold,MUTED);tx("DESCRIPTION / TASK",x+92,y-12,6.7,bold,MUTED);tx("MATERIAL (IF ANY)",x+w-205,y-12,6.7,bold,MUTED);tx("STATUS",statusTextX,y-12,6.7,bold,MUTED);y-=20}
  function ensure(h){if(y-h<BOT)return np();return Promise.resolve()}
  function itemStatus(it){if(isDone(it))return ["DONE",GREEN,GREEN_TX];if(it.kind==="issue")return ["OPEN",PINK,PINK_TX];if(it.requiresMaterial&&it.materialStatus==="received")return ["RECEIVED",RECEIVED_ORANGE,RECEIVED_ORANGE_TX];if(it.requiresMaterial&&it.materialStatus==="ordered")return ["ORDERED",BLUE,BLUE_TX];if(it.requiresMaterial&&it.materialStatus==="requested")return ["REQUESTED",GRAY,MUTED];return ["OPEN",BLUE,BLUE_TX]}
  await np();
  for(i=0;i<p.items.length;i++){z=p.items[i];if(isDone(z)&&!view.includeDone)continue;a=(z.area||"General").trim()||"General";if(!areas[a])areas[a]=[];areas[a].push(z)}
  keys=Object.keys(areas).sort();var no=0;
  for(i=0;i<keys.length;i++){
-   a=keys[i];await ensure(45);box(L,y-16,W-L-R,16,GRAY,LINE);tx(a.toUpperCase(),L+8,y-11,7.5,bold,NAVY,W-L-R-55);tx(areas[a].length+" "+(areas[a].length===1?"ITEM":"ITEMS"),L+468,y-11,6.2,bold,MUTED,70);y-=19;
+   a=keys[i];await ensure(45);box(L,y-16,W-L-R,16,GRAY,LINE);tx(a.toUpperCase(),L+8,y-11,7.5,bold,NAVY,W-L-R-55);tx(areas[a].length+" "+(areas[a].length===1?"ITEM":"ITEMS"),W-R-60,y-11,6.2,bold,MUTED,70);y-=19;
    for(j=0;j<areas[a].length;j++){
      z=areas[a][j];no++;var rowH=z.requiresMaterial&&z.materialName?29:25;await ensure(rowH+3);var done=isDone(z),issue=z.kind==="issue",fill=done?GREEN:(issue?PINK:WHITE),w=W-L-R;box(L,y-rowH,w,rowH,fill,LINE);
      tx((no<10?"0":"")+no,L+7,y-17,7,font,NAVY,20);
